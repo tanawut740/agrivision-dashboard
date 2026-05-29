@@ -1,0 +1,1999 @@
+<!doctype html>
+<html lang="en"><head><script data-od-sandbox-shim="">(function(){
+  function makeStore(){
+    var data = {};
+    var api = {
+      getItem: function(k){ return Object.prototype.hasOwnProperty.call(data, k) ? data[k] : null; },
+      setItem: function(k, v){ data[k] = String(v); },
+      removeItem: function(k){ delete data[k]; },
+      clear: function(){ data = {}; },
+      key: function(i){ return Object.keys(data)[i] || null; }
+    };
+    Object.defineProperty(api, 'length', { get: function(){ return Object.keys(data).length; } });
+    return api;
+  }
+  function tryShim(name){
+    var works = false;
+    try { works = !!window[name] && typeof window[name].getItem === 'function'; void window[name].length; }
+    catch (_) { works = false; }
+    if (works) return;
+    try { Object.defineProperty(window, name, { configurable: true, value: makeStore() }); }
+    catch (_) { try { window[name] = makeStore(); } catch (__) {} }
+  }
+  tryShim('localStorage');
+  tryShim('sessionStorage');
+  document.addEventListener('click', (e) => {
+    if (!e.target || !(e.target instanceof Element)) return;
+    var link = e.target.closest('a[href]');
+    if (!link) return;
+    var href = link.getAttribute('href');
+    if (href === null) return;
+    var isAnchor = href.startsWith('#') || href === '';
+    if (isAnchor) {
+      e.preventDefault();
+      if (href === '' || href === '#') {
+        window.scrollTo({ top: 0 });
+        history.replaceState(null, '', ' ');
+      } else {
+        var targetId = href.slice(1);
+        var target = targetId ? document.getElementById(targetId) : null;
+        if (target) {
+          target.scrollIntoView();
+          location.hash === href && history.replaceState(null, '', ' ');
+          location.hash = href;
+        }
+      }
+    } else if (link.getAttribute('target') === '_blank') {
+      e.preventDefault();
+      let safe = false;
+      try {
+        var url = new URL(href, location.href);
+        safe =
+          url.protocol === 'http:' ||
+          url.protocol === 'https:' ||
+          url.protocol === 'mailto:';
+      } catch (_) {}
+      safe && window.open(href, '_blank', 'noopener,noreferrer');
+    }
+  });
+})();</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AgriVision Pro - Durian Water Demand Intelligence</title>
+  <!-- GISTDA Sphere Map API -->
+  <script type="text/javascript" src="https://api.sphere.gistda.or.th/map/?key=7B5CC465BDB444FF8450395105EE2DD6"></script>
+  <!-- React & Babel -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  
+  <style>
+    /* =========================================================================
+       THEME SYSTEM
+       ========================================================================= */
+    :root {
+      /* Dark Tech (Default) */
+      --bg: oklch(14% 0.02 250);
+      --surface: oklch(20% 0.03 250 / 0.7);
+      --surface-solid: oklch(20% 0.03 250);
+      --surface-hover: oklch(25% 0.04 250);
+      --fg: oklch(98% 0.01 250);
+      --muted: oklch(70% 0.02 250);
+      --border: oklch(30% 0.04 250 / 0.5);
+      --accent: oklch(75% 0.15 150); /* Neon Green */
+      --blue: oklch(65% 0.15 240);
+      --yellow: oklch(85% 0.15 90);
+      --orange: oklch(70% 0.18 45);
+      --red: oklch(60% 0.2 25);
+      --glass: blur(12px);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    [data-theme='light'] {
+      --bg: oklch(98% 0.01 150);
+      --surface: oklch(100% 0 0 / 0.8);
+      --surface-solid: oklch(100% 0 0);
+      --surface-hover: oklch(95% 0.02 150);
+      --fg: oklch(20% 0.03 150);
+      --muted: oklch(50% 0.03 150);
+      --border: oklch(90% 0.02 150);
+      --accent: oklch(55% 0.15 150);
+      --blue: oklch(55% 0.15 240);
+      --yellow: oklch(75% 0.15 90);
+      --orange: oklch(65% 0.18 45);
+      --red: oklch(55% 0.2 25);
+      --glass: blur(8px);
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    [data-theme='satellite'] {
+      --bg: oklch(12% 0.01 180);
+      --surface: oklch(18% 0.02 180 / 0.85);
+      --surface-solid: oklch(18% 0.02 180);
+      --surface-hover: oklch(22% 0.02 180);
+      --fg: oklch(95% 0.01 180);
+      --muted: oklch(65% 0.02 180);
+      --border: oklch(28% 0.03 180);
+      --accent: oklch(68% 0.18 160); /* Emerald */
+      --blue: oklch(60% 0.12 210);
+      --yellow: oklch(78% 0.16 80); /* Amber */
+      --orange: oklch(68% 0.18 40);
+      --red: oklch(58% 0.18 20);
+      --glass: blur(16px);
+      --shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    /* =========================================================================
+       BASE STYLES
+       ========================================================================= */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      height: 100vh;
+      overflow: hidden;
+      transition: background-color 0.4s ease, color 0.4s ease;
+    }
+
+    h1, h2, h3, h4 { font-weight: 600; letter-spacing: -0.01em; }
+
+    /* Layout Shell */
+    .app-shell {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      grid-template-rows: 64px 1fr;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .top-nav {
+      grid-column: 1 / -1;
+      background: var(--surface);
+      backdrop-filter: var(--glass);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 1000;
+    }
+
+    .sidebar {
+      background: var(--surface);
+      backdrop-filter: var(--glass);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 12px;
+      gap: 8px;
+      z-index: 900;
+      overflow-y: auto;
+    }
+
+    .main-content {
+      position: relative;
+      overflow-y: auto;
+      padding: 24px;
+      background: radial-gradient(circle at top right, var(--surface), transparent);
+    }
+
+    /* Navigation Items */
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      color: var(--muted);
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+
+    .nav-item:hover {
+      background: var(--surface-hover);
+      color: var(--fg);
+    }
+
+    .nav-item.active {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    .nav-item svg { width: 18px; height: 18px; }
+
+    /* Dashboard UI Components */
+    .card {
+      background: var(--surface);
+      backdrop-filter: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .card:hover { border-color: var(--accent); }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .stat-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--accent); }
+    .stat-trend { font-size: 12px; display: flex; align-items: center; gap: 4px; }
+
+    /* Map Specific */
+    .map-container {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+    .map-ui {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      right: 24px;
+      bottom: 24px;
+      pointer-events: none;
+      z-index: 100;
+      display: grid;
+      grid-template-columns: 320px 1fr 340px;
+      gap: 24px;
+    }
+    .map-panel {
+      pointer-events: auto;
+      background: rgba(5, 15, 30, 0.94);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.65);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-height: calc(100vh - 160px);
+      overflow-y: auto;
+      color: #f8fafc;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    }
+
+    .map-panel h3,
+    .map-panel h4,
+    .map-panel label,
+    .map-panel p,
+    .map-panel span,
+    .map-panel div {
+      color: inherit;
+    }
+
+    .map-panel input {
+      color: #ffffff !important;
+    }
+
+    .map-panel input::placeholder {
+      color: rgba(226, 232, 240, 0.78);
+    }
+
+    .map-info-box {
+      background: rgba(2, 6, 23, 0.82) !important;
+      border: 1px solid rgba(148, 163, 184, 0.5) !important;
+      color: #f8fafc !important;
+    }
+
+    .agri-popup {
+      font-family: Arial, sans-serif;
+      line-height: 1.55;
+      color: #07111f;
+      background: #ffffff;
+      padding: 10px 12px;
+      border-radius: 10px;
+      min-width: 210px;
+    }
+
+    .agri-popup b { color: #052e16; }
+    .agri-popup hr { border: none; border-top: 1px solid #cbd5e1; margin: 6px 0; }
+
+    /* Utils */
+    .badge {
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .badge-success { background: var(--accent); color: var(--bg); }
+    .badge-warning { background: var(--yellow); color: var(--bg); }
+    .badge-danger { background: var(--red); color: var(--fg); }
+    .badge-info { background: var(--blue); color: var(--fg); }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--fg);
+    }
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--accent), var(--blue));
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+    }
+
+    /* Chart Simulation */
+    .chart-placeholder {
+      width: 100%;
+      height: 200px;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      padding-top: 20px;
+    }
+    .chart-bar {
+      flex: 1;
+      background: var(--accent);
+      border-radius: 4px 4px 0 0;
+      min-height: 20px;
+      opacity: 0.8;
+      transition: height 0.3s ease;
+      position: relative;
+    }
+    .chart-bar:hover { opacity: 1; filter: brightness(1.2); }
+
+    /* Alerts */
+    .alert-item {
+      display: flex;
+      gap: 16px;
+      padding: 16px;
+      border-radius: 12px;
+      border-left: 4px solid var(--border);
+      background: var(--surface);
+      margin-bottom: 12px;
+    }
+    .alert-item.critical { border-left-color: var(--red); }
+    .alert-item.warning { border-left-color: var(--orange); }
+    .alert-item.watch { border-left-color: var(--yellow); }
+    .alert-item.normal { border-left-color: var(--accent); }
+
+    /* Settings */
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    .theme-card {
+      cursor: pointer;
+      border: 2px solid transparent;
+      padding: 24px;
+      border-radius: 16px;
+      transition: all 0.2s;
+    }
+    .theme-card.active { border-color: var(--accent); background: var(--surface-hover); }
+
+    /* Transitions */
+    .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+  </style>
+<style data-od-tweaks-bridge-style="">
+[data-od-tweaks-hidden] .tw-panel {
+  transform: translateX(calc(100% + 32px)) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+.tw-restore { display: none !important; }
+</style><script data-od-tweaks-bridge="">(function(){
+  // Synchronously hide BEFORE the artifact body parses so the panel never
+  // flashes on initial paint. The host removes the attribute via postMessage
+  // once it knows the desired state.
+  document.documentElement.setAttribute('data-od-tweaks-hidden', '');
+
+  var suppressEcho = false;
+  var observer = null;
+
+  function panelEl(){ return document.querySelector('.tw-panel'); }
+
+  function applyClassesToPanel(visible){
+    var panel = panelEl();
+    if (panel) panel.classList.toggle('tw-hidden', !visible);
+  }
+
+  function setPanelVisible(visible){
+    suppressEcho = true;
+    document.documentElement.toggleAttribute('data-od-tweaks-hidden', !visible);
+    applyClassesToPanel(visible);
+    // Clear flag after the MutationObserver has had a chance to fire for this
+    // change so we don't echo our own host-driven toggles back to the host.
+    Promise.resolve().then(function(){ suppressEcho = false; });
+  }
+
+  function postState(){
+    var panel = panelEl();
+    if (!panel) return;
+    try {
+      parent.postMessage({
+        type: 'od:tweaks-panel-state',
+        visible: !panel.classList.contains('tw-hidden'),
+      }, '*');
+    } catch (e) {}
+  }
+
+  function postAvailability(){
+    try {
+      parent.postMessage({
+        type: 'od:tweaks-available',
+        available: !!panelEl(),
+      }, '*');
+    } catch (e) {}
+  }
+
+  function attachObserver(){
+    var panel = panelEl();
+    if (!panel || observer) return;
+    observer = new MutationObserver(function(){
+      if (suppressEcho) return;
+      postState();
+    });
+    observer.observe(panel, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  function onReady(){
+    // Capture the panel authored visibility BEFORE we apply the host hidden
+    // attribute. The bridge sets data-od-tweaks-hidden synchronously in head
+    // (before the body parses), so on entry to onReady the attribute is
+    // always present even though the artifact may have authored the panel
+    // as default-visible. Reading the panel class first is the only place
+    // we can still observe the author intent. Then drive the attribute,
+    // classes, and posted state from that captured value so a default
+    // visible tw-panel reports visible:true and the toolbar toggle starts
+    // ON. Issue surfaced in PR #1643 review.
+    var panel = panelEl();
+    var initialVisible = !!panel && !panel.classList.contains('tw-hidden');
+    document.documentElement.toggleAttribute('data-od-tweaks-hidden', !initialVisible);
+    applyClassesToPanel(initialVisible);
+    attachObserver();
+    postAvailability();
+    // Post the captured initial visibility so the toolbar toggle reflects
+    // the default state on mount. Without this the toggle reads OFF while
+    // a default-visible tw-panel artifact clearly shows its panel and the
+    // user would have to click toggle-on then toggle-off to actually hide.
+    postState();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', onReady);
+  } else {
+    onReady();
+  }
+
+  window.addEventListener('message', function(ev){
+    if (!ev.data || ev.data.type !== 'od:tweaks-panel-visible') return;
+    setPanelVisible(!!ev.data.visible);
+  });
+})();</script></head>
+<body>
+  <div id="root" data-od-id="path-0"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo } = React;
+
+    /* =========================================================================
+       ICONS
+       ========================================================================= */
+    const Icons = {
+      Dashboard: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
+      Map: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>,
+      Forecast: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12A10 10 0 1 1 12 2a10 10 0 0 1 10 10Z"/><path d="M12 2a10 10 0 0 1 10 10"/><path d="m16 12-4-4-4 4"/><path d="M12 8v8"/></svg>,
+      Alerts: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+      Reports: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>,
+      Settings: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+      Search: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+      Plus: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+      ArrowRight: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    };
+
+    /* =========================================================================
+       MOCK DATA
+       ========================================================================= */
+    const MOCK_ORCHARDS = [
+      { id: 1, name: 'Zone A - Chanthaburi East', lat: 12.61, lng: 102.11, health: 'green', stress: 0.12, ndvi: 0.72, ndwi: 0.38, water: 5.2 },
+      { id: 2, name: 'Zone B - Hillside Plot', lat: 12.59, lng: 102.13, health: 'yellow', stress: 0.35, ndvi: 0.65, ndwi: 0.28, water: 7.8 },
+      { id: 3, name: 'Zone C - Lowland Durian', lat: 12.62, lng: 102.09, health: 'red', stress: 0.62, ndvi: 0.58, ndwi: 0.15, water: 12.4 },
+      { id: 4, name: 'Zone D - Community Orchard', lat: 12.60, lng: 102.15, health: 'orange', stress: 0.48, ndvi: 0.61, ndwi: 0.22, water: 9.1 }
+    ];
+
+    const MOCK_FORECAST = [
+      { day: 'Mon', water: 5.2, ndvi: 0.72, ndwi: 0.38, risk: 'Normal' },
+      { day: 'Tue', water: 5.8, ndvi: 0.71, ndwi: 0.36, risk: 'Normal' },
+      { day: 'Wed', water: 6.5, ndvi: 0.70, ndwi: 0.34, risk: 'Watch' },
+      { day: 'Thu', water: 7.2, ndvi: 0.68, ndwi: 0.31, risk: 'Watch' },
+      { day: 'Fri', water: 8.1, ndvi: 0.66, ndwi: 0.28, risk: 'Warning' },
+      { day: 'Sat', water: 7.8, ndvi: 0.67, ndwi: 0.30, risk: 'Warning' },
+      { day: 'Sun', water: 6.9, ndvi: 0.69, ndwi: 0.33, risk: 'Watch' }
+    ];
+
+    const MOCK_ALERTS = [
+      { id: 1, type: 'critical', title: 'พื้นที่โซน C วิกฤต', msg: 'ค่า NDWI ต่ำกว่า 0.15 ติดต่อกัน 2 วัน ควรตรวจสอบระบบน้ำทันที', time: '10 mins ago' },
+      { id: 2, type: 'warning', title: 'ความเครียดน้ำสูงในโซน B', msg: 'NDWI มีแนวโน้มลดลงในอีก 3 วัน ควรเตรียมการรดน้ำเพิ่มเติม', time: '2 hours ago' },
+      { id: 3, type: 'watch', title: 'การตรวจสอบระบบดาวเทียม', msg: 'Sentinel-2 อัปเดตข้อมูลภาพถ่ายล่าสุด พื้นที่ส่วนใหญ่ปกติ', time: '5 hours ago' }
+    ];
+
+    /* =========================================================================
+       COMPONENTS
+       ========================================================================= */
+
+    const Layout = ({ activePage, setActivePage, theme, setTheme, children }) => {
+      return (
+        <div className="app-shell" data-theme={theme}>
+          <header className="top-nav">
+            <div className="logo">
+              <div className="logo-icon">🌿</div>
+              AgriVision <span style={{opacity: 0.5, fontWeight: 400}}>PRO</span>
+            </div>
+            
+            <div style={{display: 'flex', gap: '20px', alignItems: 'center'}}>
+              <div className="status-badge">
+                <div className="dot"></div>
+                SATELLITE MONITORING ACTIVE
+              </div>
+              <div style={{width: '32px', height: '32px', borderRadius: '50%', background: 'var(--accent)'}}></div>
+            </div>
+          </header>
+
+          <aside className="sidebar">
+            <div className="nav-item" onClick={() => setActivePage('dashboard')} className={`nav-item ${activePage === 'dashboard' ? 'active' : ''}`}>
+              <Icons.Dashboard /> Dashboard
+            </div>
+            <div className="nav-item" onClick={() => setActivePage('map')} className={`nav-item ${activePage === 'map' ? 'active' : ''}`}>
+              <Icons.Map /> Map View
+            </div>
+            <div className="nav-item" onClick={() => setActivePage('forecast')} className={`nav-item ${activePage === 'forecast' ? 'active' : ''}`}>
+              <Icons.Forecast /> 7-Day Forecast
+            </div>
+            <div className="nav-item" onClick={() => setActivePage('alerts')} className={`nav-item ${activePage === 'alerts' ? 'active' : ''}`}>
+              <Icons.Alerts /> Alerts & Risks
+            </div>
+            <div className="nav-item" onClick={() => setActivePage('reports')} className={`nav-item ${activePage === 'reports' ? 'active' : ''}`}>
+              <Icons.Reports /> Reports
+            </div>
+            <div style={{marginTop: 'auto'}} className="nav-item" onClick={() => setActivePage('settings')} className={`nav-item ${activePage === 'settings' ? 'active' : ''}`}>
+              <Icons.Settings /> Settings
+            </div>
+          </aside>
+
+          <main className="main-content">
+            {children}
+          </main>
+        </div>
+      );
+    };
+
+    /* --- PAGE: Dashboard --- */
+    const DashboardPage = () => {
+      return (
+        <div className="fade-in">
+          <h2 style={{marginBottom: '24px'}}>Orchard Intelligence Overview</h2>
+          
+          <div className="stat-grid">
+            <div className="card stat-card">
+              <span className="stat-label">Total Orchards</span>
+              <span className="stat-value">24</span>
+              <span className="stat-trend text-green">↑ 2 New this month</span>
+            </div>
+            <div className="card stat-card">
+              <span className="stat-label">Today Water Need</span>
+              <span className="stat-value">6.8 <small style={{fontSize: '14px'}}>m³/day</small></span>
+              <span className="stat-trend text-red">↑ 12% vs Yesterday</span>
+            </div>
+            <div className="card stat-card">
+              <span className="stat-label">Avg Health Score</span>
+              <span className="stat-value">78<small style={{fontSize: '14px'}}>/100</small></span>
+              <span className="stat-trend text-yellow">→ Stable</span>
+            </div>
+            <div className="card stat-card">
+              <span className="stat-label">Risk Level</span>
+              <span className="stat-value" style={{color: 'var(--yellow)'}}>WATCH</span>
+              <span className="stat-trend">Zone C Warning</span>
+            </div>
+          </div>
+
+          <div style={{display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px'}}>
+            <div className="card">
+              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '20px'}}>
+                <h3>7-Day Water Demand Forecast</h3>
+                <span style={{color: 'var(--muted)', fontSize: '12px'}}>Chanthaburi Region</span>
+              </div>
+              <div className="chart-placeholder">
+                {MOCK_FORECAST.map((d, i) => (
+                  <div key={i} className="chart-bar" style={{height: `${d.water * 15}px`, background: d.water > 7 ? 'var(--orange)' : 'var(--blue)'}}>
+                    <div style={{position: 'absolute', bottom: '-24px', left: '50%', transform: 'translateX(-50%)', fontSize: '11px', color: 'var(--muted)'}}>{d.day}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="card" style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+              <h3 style={{fontSize: '16px'}}>Farmer Recommendation</h3>
+              <div style={{padding: '16px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', borderLeft: '4px solid var(--accent)'}}>
+                <p style={{fontSize: '15px', color: 'var(--fg)', lineHeight: '1.6'}}>
+                  "แนะนำให้เติมน้ำ <strong>5–7 ลบ.ม.</strong> วันนี้ และควรรดน้ำช่วง <strong>05:00–09:00 น.</strong> เพื่อลดการสูญเสียน้ำจากความร้อน"
+                </p>
+              </div>
+              <div style={{padding: '16px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', borderLeft: '4px solid var(--orange)'}}>
+                <p style={{fontSize: '14px', color: 'var(--muted)'}}>
+                  "NDWI มีแนวโน้มลดลงในอีก 3 วัน ควรตรวจสอบความชื้นในดินเพิ่มเติมในพื้นที่โซน B"
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div style={{marginTop: '24px'}}>
+            <h3 style={{marginBottom: '16px'}}>Recent Critical Alerts</h3>
+            {MOCK_ALERTS.slice(0, 2).map(alert => (
+              <div key={alert.id} className={`alert-item ${alert.type}`}>
+                <div style={{width: '8px', height: '8px', borderRadius: '50%', background: `var(--${alert.type === 'critical' ? 'red' : 'yellow'})`, marginTop: '6px'}}></div>
+                <div>
+                  <h4 style={{fontSize: '14px'}}>{alert.title}</h4>
+                  <p style={{fontSize: '13px', color: 'var(--muted)'}}>{alert.msg}</p>
+                  <span style={{fontSize: '11px', color: 'var(--muted)', opacity: 0.6}}>{alert.time}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
+    /* --- PAGE: Map --- */
+    const MapPage = () => {
+      const mapContainer = useRef(null);
+      const map = useRef(null);
+      const [selection, setSelection] = useState(null);
+      const [mapError, setMapError] = useState("");
+
+      const createMockSelection = (lat, lon, clickedZone = null) => {
+        const ndvi = +(0.58 + Math.random() * 0.16).toFixed(2);
+        const ndwi = +(0.28 + Math.random() * 0.18).toFixed(2);
+        const stress = +Math.max(0, (0.45 - ndwi) / 0.20).toFixed(2);
+        const water = +(5 + stress * 5.5).toFixed(1);
+        const health = Math.round((0.40 * ndvi + 0.35 * ndwi + 0.25 * 0.78) * 100);
+        const risk = stress > 0.55 ? "เสี่ยงสูง" : stress > 0.25 ? "เฝ้าระวัง" : "ปกติ";
+        const confidence = stress > 0.55 ? "Low" : stress > 0.25 ? "Medium" : "High";
+
+        return {
+          lat: lat.toFixed(6),
+          lng: lon.toFixed(6),
+          ndvi: ndvi.toFixed(2),
+          ndwi: ndwi.toFixed(2),
+          stress: stress.toFixed(2),
+          water: water.toFixed(1),
+          health,
+          risk,
+          confidence,
+          zoneId: clickedZone ? clickedZone.id : "นอกกรอบ",
+          zoneName: clickedZone ? clickedZone.name : "นอกพื้นที่แปลง A/B/C/D",
+          zoneStatus: clickedZone ? clickedZone.status : "ไม่อยู่ในกรอบแปลง"
+        };
+      };
+
+      const createCirclePolygon = (lat, lon, radiusMeters = 500, points = 64) => {
+        const earthRadius = 6378137;
+        const coords = [];
+        const latRad = lat * Math.PI / 180;
+        const lonRad = lon * Math.PI / 180;
+        const angularDistance = radiusMeters / earthRadius;
+
+        for (let i = 0; i <= points; i++) {
+          const bearing = (i / points) * 2 * Math.PI;
+          const pointLat = Math.asin(
+            Math.sin(latRad) * Math.cos(angularDistance) +
+            Math.cos(latRad) * Math.sin(angularDistance) * Math.cos(bearing)
+          );
+          const pointLon = lonRad + Math.atan2(
+            Math.sin(bearing) * Math.sin(angularDistance) * Math.cos(latRad),
+            Math.cos(angularDistance) - Math.sin(latRad) * Math.sin(pointLat)
+          );
+          coords.push({ lon: pointLon * 180 / Math.PI, lat: pointLat * 180 / Math.PI });
+        }
+
+        return coords;
+      };
+
+      const FARM_OUTER_BOUNDARY = [
+        { lon: 102.1917, lat: 14.5303 },
+        { lon: 102.1969, lat: 14.5300 },
+        { lon: 102.2030, lat: 14.5291 },
+        { lon: 102.2042, lat: 14.5264 },
+        { lon: 102.2035, lat: 14.5228 },
+        { lon: 102.2024, lat: 14.5202 },
+        { lon: 102.1973, lat: 14.5228 },
+        { lon: 102.1951, lat: 14.5209 },
+        { lon: 102.1919, lat: 14.5215 },
+        { lon: 102.1908, lat: 14.5239 },
+        { lon: 102.1928, lat: 14.5259 },
+        { lon: 102.1917, lat: 14.5283 },
+        { lon: 102.1917, lat: 14.5303 }
+      ];
+
+      const FARM_ZONES = [
+        {
+          id: "A",
+          name: "Zone A - แปลงบนซ้าย",
+          center: { lat: 14.5279, lon: 102.1949 },
+          coords: [
+            { lon: 102.1917, lat: 14.5303 },
+            { lon: 102.1969, lat: 14.5300 },
+            { lon: 102.1976, lat: 14.5270 },
+            { lon: 102.1962, lat: 14.5256 },
+            { lon: 102.1928, lat: 14.5259 },
+            { lon: 102.1917, lat: 14.5283 },
+            { lon: 102.1917, lat: 14.5303 }
+          ],
+          lineColor: "rgba(0, 255, 136, 0.98)",
+          fillColor: "rgba(0, 255, 136, 0.13)",
+          status: "ปกติ"
+        },
+        {
+          id: "B",
+          name: "Zone B - แปลงบนขวา",
+          center: { lat: 14.5269, lon: 102.2005 },
+          coords: [
+            { lon: 102.1969, lat: 14.5300 },
+            { lon: 102.2030, lat: 14.5291 },
+            { lon: 102.2042, lat: 14.5264 },
+            { lon: 102.2008, lat: 14.5247 },
+            { lon: 102.1976, lat: 14.5270 },
+            { lon: 102.1969, lat: 14.5300 }
+          ],
+          lineColor: "rgba(255, 214, 10, 0.98)",
+          fillColor: "rgba(255, 214, 10, 0.14)",
+          status: "เฝ้าระวัง"
+        },
+        {
+          id: "C",
+          name: "Zone C - แปลงล่างซ้าย",
+          center: { lat: 14.5235, lon: 102.1942 },
+          coords: [
+            { lon: 102.1928, lat: 14.5259 },
+            { lon: 102.1962, lat: 14.5256 },
+            { lon: 102.1973, lat: 14.5228 },
+            { lon: 102.1951, lat: 14.5209 },
+            { lon: 102.1919, lat: 14.5215 },
+            { lon: 102.1908, lat: 14.5239 },
+            { lon: 102.1928, lat: 14.5259 }
+          ],
+          lineColor: "rgba(255, 106, 0, 0.98)",
+          fillColor: "rgba(255, 106, 0, 0.16)",
+          status: "ต้องรดน้ำเพิ่ม"
+        },
+        {
+          id: "D",
+          name: "Zone D - แปลงล่างขวา",
+          center: { lat: 14.5232, lon: 102.2001 },
+          coords: [
+            { lon: 102.1962, lat: 14.5256 },
+            { lon: 102.2008, lat: 14.5247 },
+            { lon: 102.2035, lat: 14.5228 },
+            { lon: 102.2024, lat: 14.5202 },
+            { lon: 102.1973, lat: 14.5228 },
+            { lon: 102.1962, lat: 14.5256 }
+          ],
+          lineColor: "rgba(255, 48, 64, 0.98)",
+          fillColor: "rgba(255, 48, 64, 0.14)",
+          status: "เสี่ยงสูง"
+        }
+      ];
+
+      const pointInPolygon = (lat, lon, polygon) => {
+        let inside = false;
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+          const xi = polygon[i].lon, yi = polygon[i].lat;
+          const xj = polygon[j].lon, yj = polygon[j].lat;
+          const intersect = ((yi > lat) !== (yj > lat)) &&
+            (lon < (xj - xi) * (lat - yi) / ((yj - yi) || 0.0000001) + xi);
+          if (intersect) inside = !inside;
+        }
+        return inside;
+      };
+
+      const getClickedZone = (lat, lon) => {
+        return FARM_ZONES.find(zone => pointInPolygon(lat, lon, zone.coords));
+      };
+
+      const drawFarmZoneFrames = () => {
+        if (!map.current || !window.sphere) return;
+
+        try {
+          const outer = new sphere.Polygon(
+            FARM_OUTER_BOUNDARY,
+            {
+              lineWidth: 5,
+              lineColor: "rgba(255, 255, 255, 0.85)",
+              fillColor: "rgba(255, 255, 255, 0.03)"
+            }
+          );
+          map.current.Overlays.add(outer);
+        } catch (err) {
+          console.warn("Cannot draw outer farm boundary", err);
+        }
+
+        FARM_ZONES.forEach((zone) => {
+          try {
+            const polygon = new sphere.Polygon(
+              zone.coords,
+              {
+                lineWidth: 3,
+                lineColor: zone.lineColor,
+                fillColor: zone.fillColor
+              }
+            );
+            map.current.Overlays.add(polygon);
+          } catch (err) {
+            console.warn("Cannot draw farm zone frame", zone.id, err);
+          }
+
+          try {
+            const label = new sphere.Marker(
+              { lon: zone.center.lon, lat: zone.center.lat },
+              {
+                title: `📍 แปลง ${zone.id}`,
+                detail: `<div class="agri-popup"><b>แปลง ${zone.id}</b><br>${zone.name}<br><b>สถานะ:</b> ${zone.status}<br><b>หมายเหตุ:</b> หมุดนี้คือจุดกลางของกรอบพื้นที่</div>`
+              }
+            );
+            map.current.Overlays.add(label);
+          } catch (err) {
+            console.warn("Cannot add farm zone label", zone.id, err);
+          }
+        });
+      };
+
+      const addRadiusOverlay = (lat, lon) => {
+        // GISTDA sphere.Circle may interpret radius differently in some environments.
+        // To prevent an oversized circle, always draw a geodesic polygon calculated in meters.
+        const analysisDistanceMeters = 500;
+
+        try {
+          const polygonOverlay = new sphere.Polygon(
+            createCirclePolygon(lat, lon, analysisDistanceMeters, 96),
+            {
+              lineWidth: 3,
+              lineColor: "rgba(0, 229, 255, 0.95)",
+              fillColor: "rgba(0, 229, 255, 0.16)"
+            }
+          );
+          map.current.Overlays.add(polygonOverlay);
+        } catch (err) {
+          console.warn("Cannot draw 500m analysis distance overlay", err);
+        }
+      };
+
+      const addPopup = (lat, lon, result) => {
+        try {
+          const popup = new sphere.Popup(
+            { lon, lat },
+            {
+              title: "AgriVision Analysis",
+              detail: `
+                <div class="agri-popup">
+                  <b>📍 จุดที่เลือก</b><br>
+                  <b>ระยะวิเคราะห์:</b> 500 เมตร<br>
+                  <b>แปลงที่เลือก:</b> ${result.zoneId} (${result.zoneStatus})<br>
+                  <b>Latitude:</b> ${result.lat}<br>
+                  <b>Longitude:</b> ${result.lng}<br>
+                  <hr>
+                  <b>NDVI:</b> ${result.ndvi}<br>
+                  <b>NDWI:</b> ${result.ndwi}<br>
+                  <b>Health Score:</b> ${result.health}/100<br>
+                  <b>Stress Factor:</b> ${result.stress}<br>
+                  <b>Water Need:</b> ${result.water} ลบ.ม./วัน<br>
+                  <b>Confidence:</b> ${result.confidence}
+                </div>
+              `
+            }
+          );
+          map.current.Overlays.add(popup);
+        } catch (err) {
+          console.warn("Cannot add popup", err);
+        }
+      };
+
+      const addMarker = (lat, lon) => {
+        try {
+          const markerOverlay = new sphere.Marker(
+            { lon, lat },
+            {
+              title: "📍 จุดที่คลิก",
+              detail: `<div class="agri-popup"><b>จุดวิเคราะห์ที่เลือก</b><br>ระยะพื้นที่วิเคราะห์ 500 เมตร<br>Lat: ${lat.toFixed(6)}<br>Lon: ${lon.toFixed(6)}</div>`
+            }
+          );
+          map.current.Overlays.add(markerOverlay);
+        } catch (err) {
+          console.warn("Cannot add marker", err);
+        }
+      };
+
+      useEffect(() => {
+        if (!mapContainer.current) return;
+
+        if (!window.sphere) {
+          setMapError("ไม่สามารถโหลด GISTDA Sphere Map ได้ กรุณาตรวจสอบ API key, Internet, domain restriction หรือ WebGL");
+          return;
+        }
+
+        try {
+          map.current = new sphere.Map({
+            placeholder: mapContainer.current
+          });
+
+          // GISTDA Sphere บาง environment เรียก goTo() แล้วไปชน easeTo ที่ไม่มีอยู่
+          // เลยใช้ location() + zoom() ตามตัวอย่าง official HTML แทน
+          try {
+            if (typeof map.current.location === "function") {
+              map.current.location({ lon: 102.1977, lat: 14.5251 });
+            }
+            if (typeof map.current.zoom === "function") {
+              map.current.zoom(15);
+            }
+          } catch (err) {
+            console.warn("Cannot set map center/zoom", err);
+          }
+
+          try {
+            map.current.Ui.DPad.visible(false);
+            map.current.Ui.Geolocation.visible(false);
+            map.current.Ui.Zoombar.visible(false);
+            map.current.Ui.Scale.visible(false);
+            map.current.Ui.Fullscreen.visible(false);
+            map.current.Ui.LayerSelector.visible(false);
+          } catch (err) {
+            console.warn("Some Sphere UI controls are unavailable", err);
+          }
+
+          try {
+            if (window.sphere.Layers && window.sphere.Layers.HYBRID) {
+              map.current.Layers.setBase(window.sphere.Layers.HYBRID);
+            }
+          } catch (err) {
+            console.warn("Cannot set Sphere base layer", err);
+          }
+
+          drawFarmZoneFrames();
+
+          map.current.Event.bind(sphere.EventName.Click, function(location) {
+            const lat = Number(location.lat);
+            const lon = Number(location.lon);
+            const clickedZone = getClickedZone(lat, lon);
+            const result = createMockSelection(lat, lon, clickedZone);
+
+            try {
+              map.current.Overlays.clear();
+            } catch (err) {
+              console.warn("Cannot clear overlays", err);
+            }
+
+            drawFarmZoneFrames();
+            addRadiusOverlay(lat, lon);
+            addMarker(lat, lon);
+            addPopup(lat, lon, result);
+            setSelection(result);
+          });
+        } catch (err) {
+          console.error(err);
+          setMapError("สร้างแผนที่ GISTDA Sphere ไม่สำเร็จ: " + err.message);
+        }
+
+        return () => {
+          try {
+            if (map.current && map.current.Overlays) map.current.Overlays.clear();
+          } catch (err) {}
+          map.current = null;
+        };
+      }, []);
+
+      return (
+        <div style={{position: 'absolute', inset: 0, overflow: 'hidden'}}>
+          <div ref={mapContainer} className="map-container"></div>
+          <div style={{position:'absolute', left:'50%', transform:'translateX(-50%)', top:'18px', zIndex:110, background:'rgba(2,6,23,0.88)', color:'#f8fafc', padding:'10px 16px', borderRadius:'999px', border:'1px solid rgba(148,163,184,0.5)', boxShadow:'0 8px 24px rgba(0,0,0,0.45)', pointerEvents:'none', fontWeight:700}}>
+            คลิกซ้ายบนแผนที่เพื่อปักหมุดและแสดงพื้นที่ 500 เมตร
+          </div>
+
+          {mapError && (
+            <div style={{
+              position: 'absolute',
+              inset: '24px',
+              zIndex: 9999,
+              display: 'grid',
+              placeItems: 'center',
+              background: 'rgba(0,0,0,0.72)',
+              border: '1px solid var(--red)',
+              borderRadius: '16px',
+              color: 'var(--fg)',
+              padding: '24px',
+              textAlign: 'center'
+            }}>
+              <div>
+                <h3 style={{color: 'var(--red)', marginBottom: '8px'}}>GISTDA Map Error</h3>
+                <p>{mapError}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="map-ui">
+            <div className="map-panel">
+              <div style={{display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-hover)', padding: '10px', borderRadius: '8px'}}>
+                <Icons.Search />
+                <input type="text" placeholder="Search location..." style={{background: 'transparent', border: 'none', color: 'var(--fg)', outline: 'none', width: '100%'}} />
+              </div>
+
+              <div>
+                <h4 style={{fontSize: '12px', color: '#e2e8f0', marginBottom: '12px', textTransform: 'uppercase'}}>GISTDA Sphere Layers</h4>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                  <label style={{display: 'flex', gap: '10px', cursor: 'pointer'}}>
+                    <input type="checkbox" defaultChecked /> GISTDA / Sphere Base Map
+                  </label>
+                  <label style={{display: 'flex', gap: '10px', cursor: 'pointer'}}>
+                    <input type="checkbox" defaultChecked /> 500m Analysis Distance
+                  </label>
+                  <label style={{display: 'flex', gap: '10px', cursor: 'pointer'}}>
+                    <input type="checkbox" defaultChecked /> Farm Zone Frames A / B / C / D
+                  </label>
+                  <label style={{display: 'flex', gap: '10px', cursor: 'pointer'}}>
+                    <input type="checkbox" defaultChecked /> NDVI / NDWI Mock Result
+                  </label>
+                </div>
+              </div>
+
+              <div style={{marginTop: 'auto'}}>
+                <div className="map-info-box" style={{padding: '12px', borderRadius: '8px'}}>
+                  <div style={{fontSize: '12px', color: '#e2e8f0', marginBottom: '8px'}}>Legend</div>
+                  <div style={{display:'flex', gap:'8px', alignItems:'center', marginBottom:'6px'}}><span style={{width:16,height:10,border:'2px solid var(--accent)',background:'rgba(0,255,136,.12)'}}></span> แปลง A: ปกติ</div>
+                  <div style={{display:'flex', gap:'8px', alignItems:'center', marginBottom:'6px'}}><span style={{width:16,height:10,border:'2px solid var(--yellow)',background:'rgba(255,214,10,.12)'}}></span> แปลง B: เฝ้าระวัง</div>
+                  <div style={{display:'flex', gap:'8px', alignItems:'center', marginBottom:'6px'}}><span style={{width:16,height:10,border:'2px solid var(--orange)',background:'rgba(255,106,0,.14)'}}></span> แปลง C: ต้องรดน้ำเพิ่ม</div>
+                  <div style={{display:'flex', gap:'8px', alignItems:'center', marginBottom:'10px'}}><span style={{width:16,height:10,border:'2px solid var(--red)',background:'rgba(255,48,64,.12)'}}></span> แปลง D: เสี่ยงสูง</div>
+                  <div style={{display:'flex', gap:'8px', alignItems:'center'}}><span style={{width:16,height:16,borderRadius:'50%',border:'2px solid var(--blue)',background:'rgba(0,229,255,.18)'}}></span> ระยะวิเคราะห์ 500 เมตร</div>
+                </div>
+              </div>
+            </div>
+
+            <div></div>
+
+            <div className="map-panel">
+              <h3>Analysis Result</h3>
+              {!selection ? (
+                <p style={{color: '#e2e8f0', fontSize: '13px'}}>คลิกซ้ายบนแผนที่ GISTDA เพื่อปักหมุด แสดงระยะวิเคราะห์ 500 เมตร และดูว่าอยู่ในกรอบแปลง A / B / C / D หรือไม่</p>
+              ) : (
+                <div className="fade-in" style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+                  <div className="map-info-box" style={{padding: '12px', borderRadius: '8px'}}>
+                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '4px'}}>
+                      <span style={{fontSize: '11px', color: 'var(--muted)'}}>Latitude</span>
+                      <span className="mono">{selection.lat}</span>
+                    </div>
+                    <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                      <span style={{fontSize: '11px', color: 'var(--muted)'}}>Longitude</span>
+                      <span className="mono">{selection.lng}</span>
+                    </div>
+                    <div style={{marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border)', fontSize: '11px', color: 'var(--blue)'}}>
+                      ระยะวิเคราะห์: 500 เมตร
+                    </div>
+                    <div style={{marginTop: '6px', fontSize: '12px', color: 'var(--accent)'}}>
+                      แปลงที่เลือก: {selection.zoneId} | {selection.zoneStatus}
+                    </div>
+                  </div>
+
+                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px'}}>
+                    <div className="card" style={{padding: '12px'}}>
+                      <div className="stat-label">NDVI</div>
+                      <div style={{fontSize: '20px', fontWeight: '700', color: 'var(--accent)'}}>{selection.ndvi}</div>
+                    </div>
+                    <div className="card" style={{padding: '12px'}}>
+                      <div className="stat-label">NDWI</div>
+                      <div style={{fontSize: '20px', fontWeight: '700', color: 'var(--blue)'}}>{selection.ndwi}</div>
+                    </div>
+                  </div>
+
+                  <div className="card" style={{padding: '16px', background: 'linear-gradient(135deg, var(--surface), var(--bg))'}}>
+                    <div className="stat-label">Predicted Water Need</div>
+                    <div style={{fontSize: '28px', fontWeight: '800', margin: '8px 0'}}>{selection.water} <small style={{fontSize: '14px'}}>ลบ.ม./วัน</small></div>
+                    <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+                      <div className="badge badge-info" style={{background: parseFloat(selection.stress) > 0.55 ? 'var(--red)' : parseFloat(selection.stress) > 0.25 ? 'var(--yellow)' : 'var(--accent)', color: 'var(--bg)'}}>
+                        STRESS: {selection.stress}
+                      </div>
+                      <div className="badge badge-info">Health: {selection.health}/100</div>
+                    </div>
+                  </div>
+
+                  <div style={{padding: '14px', background: 'var(--bg)', borderRadius: '8px', border: '1px solid var(--border)', fontSize:'13px'}}>
+                    <strong>คำแนะนำ:</strong><br />
+                    วันนี้ควรเติมน้ำประมาณ {selection.water} ลบ.ม. และตรวจสอบพื้นที่ที่เลือกเพิ่มเติม หากค่า NDWI ลดลงต่อเนื่อง
+                  </div>
+
+                  <div style={{fontSize: '11px', color: 'var(--muted)', marginTop: '8px'}}>
+                    Confidence Level: <span style={{color: 'var(--accent)'}}>{selection.confidence}</span> | Risk: <span style={{color: 'var(--yellow)'}}>{selection.risk}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    /* --- PAGE: Forecast --- */
+    const ForecastPage = () => {
+      return (
+        <div className="fade-in">
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px'}}>
+            <h2>7-Day Precision Forecast</h2>
+            <div style={{display: 'flex', gap: '12px'}}>
+              <button className="nav-item" style={{background: 'var(--surface)', border: '1px solid var(--border)'}}>Last Week</button>
+              <button className="nav-item" style={{background: 'var(--accent)', border: 'none', color: 'var(--bg)'}}>Next Week</button>
+            </div>
+          </div>
+
+          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px'}}>
+            <div className="card">
+              <h3>Water Demand Trend (m³)</h3>
+              <div className="chart-placeholder" style={{height: '180px'}}>
+                {MOCK_FORECAST.map((d, i) => (
+                  <div key={i} className="chart-bar" style={{height: `${d.water * 18}px`}}></div>
+                ))}
+              </div>
+            </div>
+            <div className="card">
+              <h3>NDVI vs NDWI Correlation</h3>
+              <div className="chart-placeholder" style={{height: '180px', position: 'relative'}}>
+                {/* Simplified Multi-line Simulation */}
+                <div style={{position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', gap: '8px'}}>
+                   {MOCK_FORECAST.map((d, i) => (
+                    <div key={i} style={{flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', height: '100%', justifyContent: 'flex-end'}}>
+                      <div style={{height: `${d.ndvi * 150}px`, background: 'var(--accent)', borderRadius: '2px', opacity: 0.6}}></div>
+                      <div style={{height: `${d.ndwi * 150}px`, background: 'var(--blue)', borderRadius: '2px', opacity: 0.6}}></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3>Daily Detail Projection</h3>
+            <table style={{width: '100%', borderCollapse: 'collapse', marginTop: '16px'}}>
+              <thead>
+                <tr style={{textAlign: 'left', color: 'var(--muted)', fontSize: '12px', borderBottom: '1px solid var(--border)'}}>
+                  <th style={{padding: '12px'}}>DATE</th>
+                  <th style={{padding: '12px'}}>NDVI</th>
+                  <th style={{padding: '12px'}}>NDWI</th>
+                  <th style={{padding: '12px'}}>STRESS FACTOR</th>
+                  <th style={{padding: '12px'}}>WATER NEED</th>
+                  <th style={{padding: '12px'}}>RISK</th>
+                </tr>
+              </thead>
+              <tbody>
+                {MOCK_FORECAST.map((d, i) => (
+                  <tr key={i} style={{borderBottom: '1px solid var(--border)', fontSize: '14px'}}>
+                    <td style={{padding: '12px'}} className="mono">{d.day}, May {15 + i}</td>
+                    <td style={{padding: '12px'}} className="mono">{d.ndvi}</td>
+                    <td style={{padding: '12px'}} className="mono">{d.ndwi}</td>
+                    <td style={{padding: '12px'}} className="mono">{(1 - d.ndwi).toFixed(2)}</td>
+                    <td style={{padding: '12px'}} className="mono text-blue">{d.water} m³</td>
+                    <td style={{padding: '12px'}}>
+                      <span className={`badge ${d.risk === 'Normal' ? 'badge-success' : d.risk === 'Watch' ? 'badge-warning' : 'badge-danger'}`}>
+                        {d.risk}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    };
+
+    /* --- PAGE: Alerts --- */
+    const AlertsPage = () => {
+      return (
+        <div className="fade-in">
+          <h2 style={{marginBottom: '24px'}}>Risk Monitoring & Alerts</h2>
+          
+          <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '32px'}}>
+            <div className="card" style={{borderLeft: '4px solid var(--accent)'}}>
+              <div className="stat-label">Normal</div>
+              <div className="stat-value">18</div>
+            </div>
+            <div className="card" style={{borderLeft: '4px solid var(--yellow)'}}>
+              <div className="stat-label">Watch</div>
+              <div className="stat-value">4</div>
+            </div>
+            <div className="card" style={{borderLeft: '4px solid var(--orange)'}}>
+              <div className="stat-label">Warning</div>
+              <div className="stat-value">1</div>
+            </div>
+            <div className="card" style={{borderLeft: '4px solid var(--red)'}}>
+              <div className="stat-label">Critical</div>
+              <div className="stat-value">1</div>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3 style={{marginBottom: '20px'}}>Active Alerts</h3>
+            {MOCK_ALERTS.map(alert => (
+              <div key={alert.id} className={`alert-item ${alert.type}`}>
+                <div style={{fontSize: '24px'}}>
+                  {alert.type === 'critical' ? '🔴' : alert.type === 'warning' ? '🟠' : '🟡'}
+                </div>
+                <div style={{flex: 1}}>
+                  <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                    <h4 style={{fontSize: '16px'}}>{alert.title}</h4>
+                    <span style={{fontSize: '12px', color: 'var(--muted)'}}>{alert.time}</span>
+                  </div>
+                  <p style={{marginTop: '4px', color: 'var(--muted)'}}>{alert.msg}</p>
+                  <div style={{marginTop: '12px', display: 'flex', gap: '10px'}}>
+                    <button style={{padding: '6px 12px', borderRadius: '6px', background: 'var(--surface-hover)', border: '1px solid var(--border)', color: 'var(--fg)', fontSize: '12px', cursor: 'pointer'}}>View on Map</button>
+                    <button style={{padding: '6px 12px', borderRadius: '6px', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--muted)', fontSize: '12px', cursor: 'pointer'}}>Dismiss</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            <div className={`alert-item normal`} style={{opacity: 0.6}}>
+              <div style={{fontSize: '24px'}}>🟢</div>
+              <div>
+                <h4 style={{fontSize: '16px'}}>พื้นที่โซน A ปกติ</h4>
+                <p>ความชื้นสัมพัทธ์และ NDVI อยู่ในเกณฑ์ดีเยี่ยม</p>
+                <span style={{fontSize: '12px'}}>12 hours ago</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    /* --- PAGE: Reports --- */
+    const ReportsPage = () => {
+      return (
+        <div className="fade-in">
+          <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '24px'}}>
+            <h2>Agricultural Data Reports</h2>
+            <div style={{display: 'flex', gap: '12px'}}>
+              <button className="nav-item" style={{background: 'var(--surface)', border: '1px solid var(--border)'}}>Export CSV</button>
+              <button className="nav-item" style={{background: 'var(--accent)', border: 'none', color: 'var(--bg)'}}>Export PDF</button>
+            </div>
+          </div>
+
+          <div className="card">
+            <div style={{display: 'flex', gap: '20px', marginBottom: '24px', padding: '12px', background: 'var(--bg)', borderRadius: '8px', border: '1px solid var(--border)'}}>
+              <div className="form-group" style={{flex: 1}}>
+                <label>Filter by Zone</label>
+                <select style={{width: '100%'}}><option>All Zones</option><option>Zone A</option><option>Zone B</option></select>
+              </div>
+              <div className="form-group" style={{flex: 1}}>
+                <label>Date Range</label>
+                <input type="date" defaultValue="2024-05-15" style={{width: '100%'}} />
+              </div>
+            </div>
+
+            <table style={{width: '100%', borderCollapse: 'collapse'}}>
+              <thead>
+                <tr style={{textAlign: 'left', color: 'var(--muted)', fontSize: '12px', borderBottom: '1px solid var(--border)'}}>
+                  <th style={{padding: '16px'}}>ORCHARD NAME</th>
+                  <th style={{padding: '16px'}}>NDVI</th>
+                  <th style={{padding: '16px'}}>NDWI</th>
+                  <th style={{padding: '16px'}}>WATER REC.</th>
+                  <th style={{padding: '16px'}}>RISK</th>
+                  <th style={{padding: '16px'}}>CONFIDENCE</th>
+                  <th style={{padding: '16px'}}>LAST UPDATED</th>
+                </tr>
+              </thead>
+              <tbody>
+                {MOCK_ORCHARDS.map(o => (
+                  <tr key={o.id} style={{borderBottom: '1px solid var(--border)'}}>
+                    <td style={{padding: '16px', fontWeight: '500'}}>{o.name}</td>
+                    <td style={{padding: '16px'}} className="mono">{o.ndvi}</td>
+                    <td style={{padding: '16px'}} className="mono">{o.ndwi}</td>
+                    <td style={{padding: '16px'}} className="mono text-blue">{o.water} m³</td>
+                    <td style={{padding: '16px'}}><span className={`badge ${o.health === 'green' ? 'badge-success' : o.health === 'red' ? 'badge-danger' : 'badge-warning'}`}>{o.health}</span></td>
+                    <td style={{padding: '16px'}} className="mono">94%</td>
+                    <td style={{padding: '16px', color: 'var(--muted)', fontSize: '12px'}}>May 14, 2024</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    };
+
+    /* --- PAGE: Settings --- */
+    const SettingsPage = ({ theme, setTheme }) => {
+      return (
+        <div className="fade-in">
+          <h2 style={{marginBottom: '24px'}}>System Settings</h2>
+          
+          <div className="card" style={{marginBottom: '24px'}}>
+            <h3 style={{marginBottom: '20px'}}>Visual Experience</h3>
+            <p style={{color: 'var(--muted)', marginBottom: '24px'}}>Select a theme that best suits your monitoring environment.</p>
+            
+            <div className="theme-grid">
+              <div className={`theme-card ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme('dark')} style={{background: 'oklch(14% 0.02 250)'}}>
+                <h4 style={{color: '#fff'}}>Dark Tech Theme</h4>
+                <div style={{display: 'flex', gap: '4px', marginTop: '12px'}}>
+                  <div style={{width: '20px', height: '20px', background: 'oklch(75% 0.15 150)', borderRadius: '4px'}}></div>
+                  <div style={{width: '20px', height: '20px', background: 'oklch(65% 0.15 240)', borderRadius: '4px'}}></div>
+                </div>
+              </div>
+              <div className={`theme-card ${theme === 'light' ? 'active' : ''}`} onClick={() => setTheme('light')} style={{background: 'oklch(98% 0.01 150)', border: '1px solid #ddd'}}>
+                <h4 style={{color: 'oklch(20% 0.03 150)'}}>Light Agriculture</h4>
+                <div style={{display: 'flex', gap: '4px', marginTop: '12px'}}>
+                  <div style={{width: '20px', height: '20px', background: 'oklch(55% 0.15 150)', borderRadius: '4px'}}></div>
+                  <div style={{width: '20px', height: '20px', background: 'oklch(55% 0.15 240)', borderRadius: '4px'}}></div>
+                </div>
+              </div>
+              <div className={`theme-card ${theme === 'satellite' ? 'active' : ''}`} onClick={() => setTheme('satellite')} style={{background: 'oklch(12% 0.01 180)'}}>
+                <h4 style={{color: '#fff'}}>Satellite Pro</h4>
+                <div style={{display: 'flex', gap: '4px', marginTop: '12px'}}>
+                  <div style={{width: '20px', height: '20px', background: 'oklch(68% 0.18 160)', borderRadius: '4px'}}></div>
+                  <div style={{width: '20px', height: '20px', background: 'oklch(78% 0.16 80)', borderRadius: '4px'}}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3>System Formulas</h3>
+            <p style={{color: 'var(--muted)', marginBottom: '16px'}}>Calculation models used for water demand and health scoring.</p>
+            <div className="formula-box">Stress Factor = max(0, (NDWI_baseline - NDWI_forecast) / 0.20)</div>
+            <div className="formula-box">Water Need = Stress Factor × ET₀ × Kc × Area</div>
+            <div className="formula-box">Health Score = 0.40×NDVI + 0.35×NDWI + 0.25×Uniformity</div>
+          </div>
+        </div>
+      );
+    };
+
+    /* =========================================================================
+       MAIN APP
+       ========================================================================= */
+    const App = () => {
+      const [activePage, setActivePage] = useState('map');
+      const [theme, setTheme] = useState('dark');
+
+      const renderPage = () => {
+        switch(activePage) {
+          case 'dashboard': return <DashboardPage />;
+          case 'map': return <MapPage />;
+          case 'forecast': return <ForecastPage />;
+          case 'alerts': return <AlertsPage />;
+          case 'reports': return <ReportsPage />;
+          case 'settings': return <SettingsPage theme={theme} setTheme={setTheme} />;
+          default: return <DashboardPage />;
+        }
+      };
+
+      return (
+        <Layout activePage={activePage} setActivePage={setActivePage} theme={theme} setTheme={setTheme}>
+          {renderPage()}
+        </Layout>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+
+
+
+<!-- AgriVision Floating AI Chatbot UI -->
+<style id="agrivision-floating-chatbot-style">
+  .agri-chatbot-root {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 999999;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    pointer-events: none;
+  }
+
+  .agri-chatbot-root * {
+    box-sizing: border-box;
+  }
+
+  .agri-chat-toggle,
+  .agri-chat-window {
+    pointer-events: auto;
+  }
+
+  .agri-chat-toggle {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 2px solid rgba(226, 232, 240, 0.82);
+    cursor: pointer;
+    background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+    box-shadow: 0 12px 28px rgba(6, 182, 212, 0.28), 0 0 0 6px rgba(15, 23, 42, 0.45);
+    display: grid;
+    place-items: center;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+  }
+
+  .agri-chat-toggle:hover {
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 16px 34px rgba(16, 185, 129, 0.34), 0 0 0 7px rgba(15, 23, 42, 0.48);
+  }
+
+  .agri-chat-toggle:active {
+    transform: scale(0.96);
+  }
+
+  .agri-chat-toggle svg {
+    width: 25px;
+    height: 25px;
+    stroke: #ffffff;
+  }
+
+  .agri-chat-window {
+    position: absolute;
+    right: 0;
+    bottom: 72px;
+    width: 320px;
+    height: 455px;
+    background: rgba(15, 23, 42, 0.96);
+    border: 1px solid rgba(148, 163, 184, 0.38);
+    border-radius: 20px;
+    box-shadow: 0 22px 60px rgba(2, 6, 23, 0.52);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(14px) scale(0.96);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.22s ease, transform 0.22s ease, visibility 0.22s ease;
+  }
+
+  .agri-chat-window.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+  }
+
+  .agri-chat-header {
+    min-height: 68px;
+    padding: 13px 14px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.98) 0%, rgba(6, 182, 212, 0.96) 100%);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .agri-chat-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .agri-chat-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    flex: 0 0 auto;
+    background: rgba(2, 6, 23, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.38);
+    display: grid;
+    place-items: center;
+    font-size: 19px;
+  }
+
+  .agri-chat-title {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+
+  .agri-chat-status {
+    margin-top: 2px;
+    font-size: 11px;
+    opacity: 0.94;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .agri-chat-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #bef264;
+    box-shadow: 0 0 0 3px rgba(190, 242, 100, 0.18);
+  }
+
+  .agri-chat-close {
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #ffffff;
+    background: rgba(15, 23, 42, 0.20);
+    font-size: 19px;
+    line-height: 1;
+    transition: background 0.18s ease, transform 0.18s ease;
+  }
+
+  .agri-chat-close:hover {
+    background: rgba(15, 23, 42, 0.32);
+    transform: rotate(90deg);
+  }
+
+  .agri-chat-body {
+    flex: 1;
+    padding: 13px;
+    background:
+      radial-gradient(circle at top right, rgba(6, 182, 212, 0.10), transparent 36%),
+      rgba(2, 6, 23, 0.88);
+    overflow-y: auto;
+    scroll-behavior: smooth;
+  }
+
+  .agri-message-row {
+    display: flex;
+    margin-bottom: 10px;
+  }
+
+  .agri-message-row.user {
+    justify-content: flex-end;
+  }
+
+  .agri-message-bubble {
+    max-width: 82%;
+    padding: 10px 12px;
+    border-radius: 15px;
+    font-size: 12.5px;
+    line-height: 1.45;
+    word-break: break-word;
+  }
+
+  .agri-message-bubble.bot {
+    background: rgba(30, 41, 59, 0.96);
+    color: #e2e8f0;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-bottom-left-radius: 5px;
+  }
+
+  .agri-message-bubble.user {
+    background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+    color: #ffffff;
+    border-bottom-right-radius: 5px;
+    box-shadow: 0 8px 18px rgba(6, 182, 212, 0.18);
+  }
+
+  .agri-quick-actions {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+    margin: 3px 0 11px;
+  }
+
+  .agri-quick-actions button {
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    cursor: pointer;
+    padding: 6px 9px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.92);
+    color: #67e8f9;
+    font-size: 11px;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(2, 6, 23, 0.22);
+    transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+  }
+
+  .agri-quick-actions button:hover {
+    transform: translateY(-1px);
+    background: rgba(6, 182, 212, 0.12);
+    border-color: rgba(6, 182, 212, 0.46);
+  }
+
+  .agri-typing {
+    display: none;
+    align-items: center;
+    gap: 5px;
+    width: fit-content;
+    padding: 10px 12px;
+    border-radius: 15px;
+    border-bottom-left-radius: 5px;
+    background: rgba(30, 41, 59, 0.96);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    margin-bottom: 10px;
+  }
+
+  .agri-typing.show {
+    display: flex;
+  }
+
+  .agri-typing span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #67e8f9;
+    animation: agriTyping 1s infinite ease-in-out;
+  }
+
+  .agri-typing span:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  .agri-typing span:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
+  @keyframes agriTyping {
+    0%, 80%, 100% {
+      transform: translateY(0);
+      opacity: 0.45;
+    }
+    40% {
+      transform: translateY(-4px);
+      opacity: 1;
+    }
+  }
+
+  .agri-chat-footer {
+    padding: 10px;
+    background: rgba(15, 23, 42, 0.98);
+    border-top: 1px solid rgba(148, 163, 184, 0.24);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .agri-chat-input {
+    flex: 1;
+    height: 38px;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    outline: none;
+    border-radius: 999px;
+    padding: 0 13px;
+    font-size: 12.5px;
+    color: #f8fafc;
+    background: rgba(2, 6, 23, 0.62);
+    transition: border 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .agri-chat-input::placeholder {
+    color: rgba(203, 213, 225, 0.65);
+  }
+
+  .agri-chat-input:focus {
+    border-color: rgba(6, 182, 212, 0.78);
+    box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.12);
+  }
+
+  .agri-send-btn {
+    width: 38px;
+    height: 38px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+    display: grid;
+    place-items: center;
+    box-shadow: 0 8px 16px rgba(6, 182, 212, 0.20);
+    transition: transform 0.18s ease, opacity 0.18s ease;
+  }
+
+  .agri-send-btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .agri-send-btn:active {
+    transform: scale(0.94);
+  }
+
+  .agri-send-btn svg {
+    width: 17px;
+    height: 17px;
+    stroke: #ffffff;
+  }
+
+  @media (max-width: 520px) {
+    .agri-chatbot-root {
+      right: 14px;
+      bottom: 14px;
+    }
+
+    .agri-chat-window {
+      position: fixed;
+      right: 10px;
+      left: 10px;
+      bottom: 82px;
+      width: auto;
+      height: min(500px, calc(100vh - 110px));
+      border-radius: 20px;
+    }
+
+    .agri-chat-toggle {
+      width: 54px;
+      height: 54px;
+    }
+  }
+</style>
+
+<div class="agri-chatbot-root" id="agriChatbotRoot">
+  <div class="agri-chat-window" id="agriChatWindow">
+    <div class="agri-chat-header">
+      <div class="agri-chat-profile">
+        <div class="agri-chat-avatar">🌱</div>
+        <div>
+          <div class="agri-chat-title">AgriVision Assistant</div>
+          <div class="agri-chat-status">
+            <span class="agri-chat-status-dot"></span>
+            Online
+          </div>
+        </div>
+      </div>
+      <button class="agri-chat-close" id="agriChatClose" aria-label="Close chatbot">×</button>
+    </div>
+
+    <div class="agri-chat-body" id="agriChatBody">
+      <div class="agri-message-row">
+        <div class="agri-message-bubble bot">
+          สวัสดีครับ ผมคือ AgriVision Assistant 🌱<br>
+          คลิกพื้นที่บนแผนที่ GISTDA แล้วถามผมเกี่ยวกับ NDVI, NDWI หรือการรดน้ำได้เลย
+        </div>
+      </div>
+
+      <div class="agri-quick-actions">
+        <button type="button" data-question="สรุปพื้นที่ที่เลือกให้หน่อย">สรุปพื้นที่</button>
+        <button type="button" data-question="วันนี้ควรรดน้ำกี่ลบ.ม.">แนะนำรดน้ำ</button>
+        <button type="button" data-question="พื้นที่นี้เสี่ยงไหม">เช็กความเสี่ยง</button>
+      </div>
+
+      <div class="agri-typing" id="agriTyping">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+
+    <div class="agri-chat-footer">
+      <input
+        class="agri-chat-input"
+        id="agriChatInput"
+        type="text"
+        placeholder="Ask about farm data..."
+        autocomplete="off"
+      >
+      <button class="agri-send-btn" id="agriSendBtn" aria-label="Send message">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 2L11 13"></path>
+          <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <button class="agri-chat-toggle" id="agriChatToggle" aria-label="Open chatbot">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 11.5C21 16.2 16.7 20 11.5 20C10.2 20 9 19.8 7.9 19.3L3 21L4.6 16.9C3.6 15.4 3 13.5 3 11.5C3 6.8 7.3 3 12.5 3C17.7 3 21 6.8 21 11.5Z"></path>
+    </svg>
+  </button>
+</div>
+
+<script id="agrivision-floating-chatbot-script">
+  (function () {
+    const chatWindow = document.getElementById("agriChatWindow");
+    const chatToggle = document.getElementById("agriChatToggle");
+    const chatClose = document.getElementById("agriChatClose");
+    const chatBody = document.getElementById("agriChatBody");
+    const chatInput = document.getElementById("agriChatInput");
+    const sendBtn = document.getElementById("agriSendBtn");
+    const typing = document.getElementById("agriTyping");
+
+    if (!chatWindow || !chatToggle || !chatClose || !chatBody || !chatInput || !sendBtn || !typing) return;
+
+    function openChat() {
+      chatWindow.classList.add("open");
+      chatToggle.style.display = "none";
+      setTimeout(function () {
+        chatInput.focus();
+      }, 120);
+      scrollToBottom();
+    }
+
+    function closeChat() {
+      chatWindow.classList.remove("open");
+      chatToggle.style.display = "grid";
+    }
+
+    function scrollToBottom() {
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    function addMessage(role, text) {
+      const row = document.createElement("div");
+      row.className = "agri-message-row" + (role === "user" ? " user" : "");
+
+      const bubble = document.createElement("div");
+      bubble.className = "agri-message-bubble " + role;
+      bubble.textContent = text;
+
+      row.appendChild(bubble);
+      chatBody.insertBefore(row, typing);
+      scrollToBottom();
+    }
+
+    function mockBotReply(userText) {
+      const lower = userText.toLowerCase();
+
+      if (lower.includes("น้ำ") || lower.includes("water")) {
+        return "กำลังวิเคราะห์ข้อมูลพื้นที่เกษตรให้ครับ 🌱 เบื้องต้นให้ดูค่า NDWI และปริมาณน้ำที่ระบบคำนวณจากจุดที่เลือกบนแผนที่";
+      }
+
+      if (lower.includes("ndvi") || lower.includes("ndwi")) {
+        return "ค่า NDVI ใช้ดูความสมบูรณ์ของพืช ส่วน NDWI ใช้ดูความชื้น/น้ำในพื้นที่ครับ หาก NDWI ลดลงต่อเนื่องควรเฝ้าระวัง";
+      }
+
+      if (lower.includes("เสี่ยง") || lower.includes("risk")) {
+        return "พื้นที่เสี่ยงจะดูจาก NDWI ต่ำ, Stress Factor สูง และ Health Score ลดลงครับ แนะนำให้ตรวจสอบจุดที่ระบบปักหมุดบนแผนที่";
+      }
+
+      return "กำลังวิเคราะห์ข้อมูลพื้นที่เกษตรให้ครับ 🌱";
+    }
+
+    function sendMessage(textFromButton) {
+      const text = (textFromButton || chatInput.value).trim();
+      if (!text) return;
+
+      addMessage("user", text);
+      chatInput.value = "";
+
+      typing.classList.add("show");
+      scrollToBottom();
+
+      setTimeout(function () {
+        typing.classList.remove("show");
+        addMessage("bot", mockBotReply(text));
+      }, 850);
+    }
+
+    chatToggle.addEventListener("click", openChat);
+    chatClose.addEventListener("click", closeChat);
+    sendBtn.addEventListener("click", function () {
+      sendMessage();
+    });
+
+    chatInput.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+
+    document.querySelectorAll(".agri-quick-actions button").forEach(function (button) {
+      button.addEventListener("click", function () {
+        sendMessage(button.dataset.question);
+      });
+    });
+  })();
+</script>
+
+<script data-od-snapshot-bridge="">(function(){
+  function copyComputedStyle(source, target){
+    if (!source || !target || source.nodeType !== 1 || target.nodeType !== 1) return;
+    var computed = window.getComputedStyle(source);
+    var style = target.getAttribute('style') || '';
+    for (var i = 0; i < computed.length; i++){
+      var prop = computed[i];
+      style += prop + ':' + computed.getPropertyValue(prop) + ';';
+    }
+    target.setAttribute('style', style);
+  }
+  function syncElementState(source, target){
+    var tag = source.tagName ? source.tagName.toLowerCase() : '';
+    if (tag === 'img' && source.currentSrc) target.setAttribute('src', source.currentSrc);
+    if (tag === 'input' || tag === 'textarea') target.setAttribute('value', source.value || '');
+    if (tag === 'canvas') {
+      try {
+        var img = document.createElement('img');
+        img.setAttribute('src', source.toDataURL('image/png'));
+        img.setAttribute('style', target.getAttribute('style') || '');
+        target.parentNode && target.parentNode.replaceChild(img, target);
+      } catch (_) {}
+    }
+  }
+  function inlineSnapshotStyles(originalRoot, cloneRoot){
+    copyComputedStyle(originalRoot, cloneRoot);
+    syncElementState(originalRoot, cloneRoot);
+    var originals = originalRoot.querySelectorAll('*');
+    var clones = cloneRoot.querySelectorAll('*');
+    var count = Math.min(originals.length, clones.length);
+    for (var i = 0; i < count; i++){
+      copyComputedStyle(originals[i], clones[i]);
+      syncElementState(originals[i], clones[i]);
+    }
+    var scripts = cloneRoot.querySelectorAll('script');
+    for (var s = scripts.length - 1; s >= 0; s--) scripts[s].remove();
+  }
+  function waitForImages(){
+    var imgs = Array.prototype.slice.call(document.images || []);
+    return Promise.all(imgs.map(function(img){
+      if (img.complete) return Promise.resolve();
+      return new Promise(function(resolve){
+        img.addEventListener('load', resolve, { once: true });
+        img.addEventListener('error', resolve, { once: true });
+      });
+    }));
+  }
+  function renderSnapshot(id){
+    var w = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1);
+    var h = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 1);
+    var dpr = window.devicePixelRatio || 1;
+    var docW = Math.max(w, document.documentElement.scrollWidth || 0, document.body ? document.body.scrollWidth : 0);
+    var docH = Math.max(h, document.documentElement.scrollHeight || 0, document.body ? document.body.scrollHeight : 0);
+    var clone = document.documentElement.cloneNode(true);
+    clone.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+    inlineSnapshotStyles(document.documentElement, clone);
+    var serializer = new XMLSerializer();
+    var html = serializer.serializeToString(clone);
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">' +
+      '<foreignObject x="' + (-window.scrollX || 0) + '" y="' + (-window.scrollY || 0) + '" width="' + docW + '" height="' + docH + '">' +
+      html +
+      '</foreignObject></svg>';
+    var img = new Image();
+    img.onload = function(){
+      try {
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.floor(w * dpr));
+        canvas.height = Math.max(1, Math.floor(h * dpr));
+        var ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('no 2d context');
+        ctx.scale(dpr, dpr);
+        ctx.drawImage(img, 0, 0, w, h);
+        window.parent.postMessage({ type: 'od:snapshot:result', id: id, dataUrl: canvas.toDataURL('image/png'), w: canvas.width, h: canvas.height }, '*');
+      } catch (err) {
+        window.parent.postMessage({ type: 'od:snapshot:result', id: id, error: String(err && err.message || err) }, '*');
+      }
+    };
+    img.onerror = function(){
+      window.parent.postMessage({ type: 'od:snapshot:result', id: id, error: 'snapshot image failed' }, '*');
+    };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+  window.addEventListener('message', function(ev){
+    var data = ev && ev.data;
+    if (!data || data.type !== 'od:snapshot' || !data.id) return;
+    waitForImages().then(function(){ renderSnapshot(String(data.id)); });
+  });
+})();</script><script data-od-srcdoc-transport-activation="">(function(){
+  window.addEventListener('message', function(ev){
+    var data = ev && ev.data;
+    if (!data || data.type !== 'od:srcdoc-transport-activate' || typeof data.html !== 'string') return;
+    document.open();
+    document.write(data.html);
+    document.close();
+  });
+})();</script></body></html>
