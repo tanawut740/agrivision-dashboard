@@ -249,7 +249,7 @@
       pointer-events: none;
       z-index: 100;
       display: grid;
-      grid-template-columns: 320px 1fr 340px;
+      grid-template-columns: 270px 1fr 340px;
       gap: 24px;
     }
     .map-panel {
@@ -672,6 +672,7 @@
       const mapContainer = useRef(null);
       const map = useRef(null);
       const [selection, setSelection] = useState(null);
+      const [pendingSelection, setPendingSelection] = useState(null);
       const [mapError, setMapError] = useState("");
 
       const createMockSelection = (lat, lon, clickedZone = null) => {
@@ -997,8 +998,8 @@
             drawFarmZoneFrames();
             addRadiusOverlay(lat, lon);
             addMarker(lat, lon);
-            addPopup(lat, lon, result);
-            setSelection(result);
+            setPendingSelection(result);
+            setSelection(null);
           });
         } catch (err) {
           console.error(err);
@@ -1043,9 +1044,9 @@
 
           <div className="map-ui">
             <div className="map-panel">
-              <div style={{display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-hover)', padding: '10px', borderRadius: '8px'}}>
+              <div style={{display: 'flex', alignItems: 'center', gap: '7px', background: 'var(--surface-hover)', padding: '7px 9px', borderRadius: '8px', maxWidth: '230px'}}>
                 <Icons.Search />
-                <input type="text" placeholder="Search location..." style={{background: 'transparent', border: 'none', color: 'var(--fg)', outline: 'none', width: '100%'}} />
+                <input type="text" placeholder="Search location..." style={{background: 'transparent', border: 'none', color: 'var(--fg)', outline: 'none', width: '100%', fontSize: '12px'}} />
               </div>
 
               <div>
@@ -1083,7 +1084,62 @@
             <div className="map-panel">
               <h3>Analysis Result</h3>
               {!selection ? (
-                <p style={{color: '#e2e8f0', fontSize: '13px'}}>คลิกซ้ายบนแผนที่ GISTDA เพื่อปักหมุด แสดงระยะวิเคราะห์ 500 เมตร และดูว่าอยู่ในกรอบแปลง A / B / C / D หรือไม่</p>
+                pendingSelection ? (
+                  <div className="map-info-box" style={{padding: '14px', borderRadius: '12px'}}>
+                    <div style={{fontSize: '24px', marginBottom: '8px'}}>📍</div>
+                    <h4 style={{fontSize: '15px', marginBottom: '8px', color: '#ffffff'}}>ต้องการวิเคราะห์พื้นที่นี้ใช่ไหม?</h4>
+                    <p style={{color: '#e2e8f0', fontSize: '12.5px', lineHeight: 1.6, marginBottom: '12px'}}>
+                      ระบบจะวิเคราะห์ข้อมูลในระยะ 500 เมตรจากจุดที่ปักหมุด<br />
+                      Lat: <span className="mono">{pendingSelection.lat}</span><br />
+                      Lon: <span className="mono">{pendingSelection.lng}</span>
+                    </p>
+                    <div style={{display: 'grid', gap: '8px'}}>
+                      <button
+                        onClick={() => {
+                          setSelection(pendingSelection);
+                          addPopup(Number(pendingSelection.lat), Number(pendingSelection.lng), pendingSelection);
+                          setPendingSelection(null);
+                        }}
+                        style={{
+                          width: '100%',
+                          border: 'none',
+                          borderRadius: '999px',
+                          padding: '10px 14px',
+                          cursor: 'pointer',
+                          fontWeight: 800,
+                          color: '#02130f',
+                          background: 'linear-gradient(135deg, #10b981, #06b6d4)',
+                          boxShadow: '0 8px 20px rgba(6,182,212,0.25)'
+                        }}
+                      >
+                        วิเคราะห์พื้นที่นี้
+                      </button>
+                      <button
+                        onClick={() => {
+                          setPendingSelection(null);
+                          try {
+                            map.current.Overlays.clear();
+                            drawFarmZoneFrames();
+                          } catch (err) {}
+                        }}
+                        style={{
+                          width: '100%',
+                          border: '1px solid rgba(148,163,184,0.45)',
+                          borderRadius: '999px',
+                          padding: '10px 14px',
+                          cursor: 'pointer',
+                          fontWeight: 700,
+                          color: '#e2e8f0',
+                          background: 'rgba(30,41,59,0.9)'
+                        }}
+                      >
+                        ยกเลิก
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p style={{color: '#e2e8f0', fontSize: '13px'}}>คลิกซ้ายบนแผนที่ GISTDA เพื่อปักหมุดก่อน แล้วระบบจะถามยืนยันก่อนแสดงค่าการวิเคราะห์</p>
+                )
               ) : (
                 <div className="fade-in" style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
                   <div className="map-info-box" style={{padding: '12px', borderRadius: '8px'}}>
